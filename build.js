@@ -12,14 +12,26 @@ if (!key || key.startsWith('sb_secret_') || key.includes('service_role')) {
 }
 const cp = require('child_process'), os = require('os');
 const files = ['index.html', 'app.js', 'lib.js', 'auth.js', 'pages.js', 'pages2.js', 'task.js'];
+// Toleran terhadap nama file yang bertambah akhiran, mis. "app br.js" atau "app (1).js" -> app.js
+const present = fs.readdirSync('.');
+const find = (name) => {
+  if (present.includes(name)) return name;
+  const ext = path.extname(name), base = name.slice(0, -ext.length);
+  return present.find((f) => f.startsWith(base) && f.endsWith(ext) && !/^[0-9a-z]/i.test(f.slice(base.length, -ext.length || undefined))) || null;
+};
+const src = {};
+for (const f of files) {
+  src[f] = find(f);
+  if (!src[f]) { console.error('ERROR: file ' + f + ' tidak ditemukan di repo. File yang ada: ' + present.join(', ')); process.exit(1); }
+}
 for (const f of files.filter((x) => x.endsWith('.js'))) {
   const tmp = path.join(os.tmpdir(), 'chk-' + f.replace(/\.js$/, '.mjs'));
-  fs.copyFileSync(f, tmp);
+  fs.copyFileSync(src[f], tmp);
   try { cp.execFileSync(process.execPath, ['--check', tmp], { stdio: 'pipe' }); }
-  catch (e) { console.error('ERROR sintaks pada ' + f + ':\n' + (e.stderr || e.message)); process.exit(1); }
+  catch (e) { console.error('ERROR sintaks pada ' + src[f] + ':\n' + (e.stderr || e.message)); process.exit(1); }
 }
 fs.rmSync('dist', { recursive: true, force: true });
 fs.mkdirSync('dist');
-for (const f of files) fs.copyFileSync(f, path.join('dist', f));
+for (const f of files) fs.copyFileSync(src[f], path.join('dist', f));
 fs.writeFileSync('dist/config.js', `export const SUPABASE_URL = ${JSON.stringify(url)};\nexport const SUPABASE_ANON_KEY = ${JSON.stringify(key)};\n`);
 console.log('Build OK -> dist/');
