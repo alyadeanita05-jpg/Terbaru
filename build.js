@@ -11,7 +11,7 @@ if (!key || key.startsWith('sb_secret_') || key.includes('service_role')) {
   process.exit(1);
 }
 const cp = require('child_process'), os = require('os');
-const files = ['index.html', 'app.js', 'lib.js', 'auth.js', 'pages.js', 'pages2.js', 'task.js'];
+const files = ['index.html', 'app.js', 'lib.js', 'auth.js', 'pages.js', 'pages2.js', 'task.js','dashboard.js','tasks.js','work.js','resources.js','activity.js'];
 // Toleran terhadap nama file yang bertambah akhiran, mis. "app br.js" atau "app (1).js" -> app.js
 const present = fs.readdirSync('.');
 const find = (name) => {
