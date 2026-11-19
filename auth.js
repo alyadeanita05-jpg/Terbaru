@@ -6,7 +6,7 @@ const Logo = () => h`<div className="text-center mb-6">
   <h1 className="mt-3 text-2xl font-bold text-gray-900">Capstone Tracker</h1>
   <p className="text-sm text-pink-600 mt-1">Organize Your Tasks, Track Your Progress, Achieve Together.</p></div>`;
 
-const Shell = ({ children }) => h`<div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-white to-pink-100">
+const Shell = ({ children }) => h`<div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-lav-100 via-white to-cream-100">
   <div className="w-full max-w-md bg-white rounded-3xl shadow-lg border border-pink-100 p-6 sm:p-8 fade-in"><${Logo} />${children}</div></div>`;
 
 export function SetupScreen() {
