@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useContext, createContext } from 'https://esm.sh/react@18.3.1';
 import htm from 'https://esm.sh/htm@3.1.1';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -14,11 +15,11 @@ export const Ctx = createContext(null);
 export const useCtx = () => useContext(Ctx);
 
 // ---------- styles ----------
-export const inp = 'w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300 disabled:bg-gray-50 disabled:text-gray-500';
-export const btn = 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-pink-500 px-4 py-2 text-sm font-medium text-white hover:bg-pink-600 disabled:opacity-50 transition';
-export const btn2 = 'inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition';
-export const btnDanger = 'inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition';
-export const card = 'rounded-2xl bg-white border border-gray-100 shadow-sm';
+export const inp = 'w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-gray-400 focus:border-pink-300 focus:ring-4 focus:ring-pink-100 disabled:bg-gray-50 disabled:text-gray-500 transition';
+export const btn = 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-pink-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-pink-500/20 hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed';
+export const btn2 = 'inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed';
+export const btnDanger = 'inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50';
+export const card = 'rounded-2xl bg-white border border-gray-100 shadow-[0_1px_2px_rgba(60,30,70,.04)]';
 
 // ---------- konstanta ----------
 export const STATUS = {
@@ -103,8 +104,9 @@ export function Toaster() {
   }, [t]);
   if (!t) return null;
   const cls = t.type === 'error' ? 'bg-red-600' : 'bg-gray-900';
-  return h`<div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[100] fade-in">
-    <div className=${'rounded-xl px-4 py-2.5 text-sm text-white shadow-lg ' + cls}>${t.msg}</div></div>`;
+  return h`<div className="fixed left-1/2 -translate-x-1/2 z-[100] pop-in w-[calc(100%-2rem)] max-w-md bottom-24 lg:bottom-6" role="status">
+    <div className=${'flex items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white shadow-xl ' + cls}>
+      <span className=${'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ' + (t.type === 'error' ? 'bg-white/25' : 'bg-green-500')}>${t.type === 'error' ? '!' : '✓'}</span>${t.msg}</div></div>`;
 }
 
 // helper: jalankan query supabase & tampilkan error
@@ -138,19 +140,31 @@ const P = {
   link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
   copy: 'M9 9h13v13H9z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
   rev: 'M1 4v6h6 M3.51 15a9 9 0 1 0 2.13-9.36L1 10',
+  spark: 'M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z M19 3v4 M21 5h-4 M5 17v4 M7 19H3',
+  dots: 'M5 12h.01 M12 12h.01 M19 12h.01',
+  folder: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2',
+  tick: 'M20 6L9 17l-5-5',
 };
 export const Icon = ({ n, size = 18, className = '' }) => h`<svg width=${size} height=${size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className=${className}>${(P[n] || '').split(' M').map((d, i) => h`<path key=${i} d=${(i ? 'M' : '') + d} />`)}</svg>`;
 
 export const Spinner = ({ label = 'Memuat...' }) => h`<div className="flex items-center justify-center gap-2 py-16 text-gray-400 text-sm">
   <span className="spin inline-block h-5 w-5 rounded-full border-2 border-pink-300 border-t-transparent"></span>${label}</div>`;
 
-export const Empty = ({ title, text, action }) => h`<div className="flex flex-col items-center text-center py-12 px-4">
-  <div className="h-14 w-14 rounded-2xl bg-pink-50 flex items-center justify-center text-pink-400 mb-3"><${Icon} n="check" size=${26} /></div>
+// Kerangka loading untuk halaman (lebih halus daripada spinner)
+export const Skeleton = () => h`<div className="space-y-4 fade-in" aria-busy="true" aria-label="Memuat">
+  <div className="skeleton h-28 w-full"></div>
+  <div className="grid gap-4 sm:grid-cols-2"><div className="skeleton h-44"></div><div className="skeleton h-44"></div></div>
+  <div className="grid gap-4 sm:grid-cols-3"><div className="skeleton h-32"></div><div className="skeleton h-32"></div><div className="skeleton h-32"></div></div></div>`;
+
+export const Empty = ({ title, text, action }) => h`<div className="flex flex-col items-center text-center py-12 px-4 fade-in">
+  <div className="h-16 w-16 rounded-3xl bg-gradient-to-br from-lav-200 to-cream-100 flex items-center justify-center text-pink-500 mb-3"><${Icon} n="spark" size=${28} /></div>
   <div className="font-semibold text-gray-700">${title}</div>
   ${text && h`<div className="text-sm text-gray-400 mt-1 max-w-sm">${text}</div>`}
   ${action && h`<div className="mt-4">${action}</div>`}</div>`;
 
-const colors = ['bg-pink-200 text-pink-800', 'bg-rose-200 text-rose-800', 'bg-fuchsia-200 text-fuchsia-800', 'bg-orange-200 text-orange-800', 'bg-teal-200 text-teal-800', 'bg-sky-200 text-sky-800', 'bg-violet-200 text-violet-800'];
+const colors = ['bg-lav-200 text-lav-700', 'bg-cream-200 text-navy-600', 'bg-pink-200 text-pink-700', 'bg-amber-100 text-amber-800', 'bg-teal-100 text-teal-800', 'bg-sky-100 text-sky-800', 'bg-slate-200 text-slate-700'];
 export function Avatar({ p, size = 32 }) {
   if (!p) return h`<span className="inline-block rounded-full bg-gray-200" style=${{ width: size, height: size }}></span>`;
   if (p.avatar_url) return h`<img src=${p.avatar_url} alt=${p.name} className="rounded-full object-cover shrink-0" style=${{ width: size, height: size }} />`;
@@ -163,7 +177,7 @@ export const Badge = ({ cls, children }) => h`<span className=${'inline-flex ite
 export const StatusBadge = ({ s }) => h`<${Badge} cls=${STATUS[s]?.c}>${STATUS[s]?.l}<//>`;
 export const PriorityBadge = ({ p }) => h`<${Badge} cls=${PRIORITY[p]?.c}>${PRIORITY[p]?.l}<//>`;
 
-export function Bar({ value, color = 'bg-pink-500', slim }) {
+export function Bar({ value, color = 'bg-gradient-to-r from-lav-400 to-navy-600', slim }) {
   const col = value >= 100 ? 'bg-green-500' : color;
   return h`<div className=${'w-full rounded-full bg-gray-100 overflow-hidden ' + (slim ? 'h-1.5' : 'h-2.5')}>
     <div className=${'h-full rounded-full transition-all duration-500 ' + col} style=${{ width: Math.min(100, value) + '%' }}></div></div>`;
@@ -173,8 +187,8 @@ export function Ring({ value, size = 120 }) {
   const r = (size - 14) / 2, c = 2 * Math.PI * r;
   return h`<div className="relative" style=${{ width: size, height: size }}>
     <svg width=${size} height=${size} className="-rotate-90">
-      <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke="#fce7f3" strokeWidth="12" />
-      <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${value >= 100 ? '#22c55e' : '#ec4899'} strokeWidth="12" strokeLinecap="round"
+      <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke="#e3eff3" strokeWidth="12" />
+      <circle cx=${size / 2} cy=${size / 2} r=${r} fill="none" stroke=${value >= 100 ? '#22c55e' : '#27293d'} strokeWidth="12" strokeLinecap="round"
         strokeDasharray=${c} strokeDashoffset=${c * (1 - value / 100)} style=${{ transition: 'stroke-dashoffset .6s' }} />
     </svg>
     <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-gray-800">${value}%</div></div>`;
@@ -186,8 +200,8 @@ export function Modal({ title, onClose, children, wide }) {
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
   }, []);
-  return h`<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" onMouseDown=${(e) => e.target === e.currentTarget && onClose()}>
-    <div className=${'fade-in bg-white w-full max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-xl ' + (wide ? 'sm:max-w-2xl' : 'sm:max-w-lg')}>
+  return h`<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/40 backdrop-blur-[2px] p-0 sm:p-4" onMouseDown=${(e) => e.target === e.currentTarget && onClose()}>
+    <div className=${'slide-up bg-white w-full max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-xl ' + (wide ? 'sm:max-w-2xl' : 'sm:max-w-lg')}>
       <div className="sticky top-0 bg-white flex items-center justify-between px-5 py-4 border-b border-gray-100 z-10">
         <h3 className="font-semibold text-gray-800">${title}</h3>
         <button onClick=${onClose} className="text-gray-400 hover:text-gray-700"><${Icon} n="x" /></button></div>
@@ -204,3 +218,12 @@ export const PageTitle = ({ title, sub, right }) => h`<div className="flex flex-
 
 export const confirmDel = (msg) => window.confirm(msg);
 export const go = (hash) => { location.hash = hash; };
+
+// Indikator deadline: Aman / Mendekati deadline / Terlambat
+export function DeadlineChip({ t }) {
+  if (t.status === 'selesai') return h`<${Badge} cls="bg-green-100 text-green-700">Selesai<//>`;
+  if (!t.deadline) return h`<${Badge} cls="bg-gray-100 text-gray-500">Tanpa deadline<//>`;
+  const n = daysUntil(t.deadline);
+  const [c, l] = n < 0 ? ['bg-red-100 text-red-700', 'Terlambat'] : n <= 3 ? ['bg-amber-100 text-amber-700', 'Mendekati'] : ['bg-lav-100 text-lav-700', 'Aman'];
+  return h`<${Badge} cls=${c}>${l}<//>`;
+}
