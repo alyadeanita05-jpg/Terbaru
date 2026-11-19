@@ -108,7 +108,7 @@ export function MembersPage() {
 }
 
 export function MemberProfile({ id }) {
-  const { d, members } = useCtx();
+  const { d, members, group } = useCtx();
   const m = members.find((x) => x.user_id === id);
   if (!m) return h`<${Empty} title="Anggota tidak ditemukan" action=${h`<a href="#/members" className=${btn2}>Kembali</a>`} />`;
   const mine = d.taskMembers.filter((t) => t.user_id === id).map((t) => d.tasks.find((x) => x.id === t.task_id)).filter(Boolean);
@@ -121,11 +121,13 @@ export function MemberProfile({ id }) {
       <div className="text-xs text-gray-400 mb-1.5">${d.courses.find((c) => c.id === t.course_id)?.name}</div><${Bar} value=${p} slim /></a>`)}</div>`}</div>`;
   return h`<div className="fade-in"><a href="#/members" className="text-sm text-gray-400 hover:text-pink-600">← Anggota</a>
     <div className=${card + ' p-5 mt-2 mb-5 flex flex-wrap items-center gap-5'}><${Avatar} p=${m.profile} size=${72} />
-      <div className="flex-1 min-w-[200px]"><h1 className="text-xl font-bold">${m.profile?.name}</h1><div className="text-sm text-gray-500">${m.profile?.email}</div>
+      <div className="flex-1 min-w-[200px]"><h1 className="text-xl font-bold">${m.profile?.name}</h1><div className="text-sm text-gray-500">${m.profile?.email}</div><div className="text-xs text-gray-400">Kelompok: ${group.name}</div>
         <div className="mt-1"><${Badge} cls=${m.role === 'leader' ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-600'}>${m.role === 'leader' ? 'Ketua' : 'Anggota'}<//></div>
         <div className="flex flex-wrap gap-1.5 mt-2">${courses.map((c) => h`<a key=${c.id} href=${'#/courses/' + c.id} className="text-xs rounded-full px-2.5 py-1 text-white" style=${{ background: c.color }}>${c.name}</a>`)}</div></div>
       <div className="text-center"><${Ring} value=${userProgress(d, id)} size=${100} /><div className="text-xs text-gray-400 mt-1">Progres individu</div></div></div>
-    <div className="grid md:grid-cols-2 gap-5"><${List} title="Belum selesai" list=${todo} /><${List} title="Sudah selesai" list=${done} /></div></div>`;
+    <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${[['Tugas dikerjakan', mine.length], ['Tugas selesai', done.length], ['Catatan pengerjaan', d.workLogs.filter((w) => w.user_id === id).length], ['Aktivitas', d.activity.filter((a) => a.user_id === id).length]].map(([l, v]) => h`<div key=${l} className=${card + ' p-4'}><div className="text-2xl font-extrabold text-navy-600">${v}</div><div className="text-xs text-gray-500">${l}</div></div>`)}</div>
+    <div className="grid md:grid-cols-2 gap-5"><${List} title="Belum selesai" list=${todo} /><${List} title="Sudah selesai" list=${done} /></div>
+    <div className=${card + ' mt-5 p-4 sm:p-5'}><h3 className="mb-2 font-semibold">Riwayat aktivitas</h3>${(() => { const acts = d.activity.filter((a) => a.user_id === id).slice(0, 15); return acts.length === 0 ? h`<div className="py-2 text-sm text-gray-400">Belum ada aktivitas.</div>` : h`<ul className="divide-y divide-gray-50">${acts.map((a) => h`<${ActivityItem} key=${a.id} a=${a} />`)}</ul>`; })()}</div></div>`;
 }
 
 // ======================= NOTIFIKASI =======================
