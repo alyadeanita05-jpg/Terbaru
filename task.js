@@ -97,11 +97,11 @@ export function TaskRow({ t }) {
   const p = taskProgress(d, t.id);
   const people = d.taskMembers.filter((m) => m.task_id === t.id).map((m) => byId[m.user_id]);
   const late = t.deadline && t.status !== 'selesai' && daysUntil(t.deadline) < 0;
-  return h`<a href=${'#/tasks/' + t.id} className="block rounded-xl border border-gray-100 bg-white p-3.5 hover:border-pink-200 hover:shadow-sm transition">
+  return h`<a href=${'#/tasks/' + t.id} className="lift block rounded-2xl border border-gray-100 bg-white p-3.5">
     <div className="flex flex-wrap items-center gap-2 justify-between">
       <div className="min-w-0"><div className="font-medium text-gray-800 truncate">${t.title}</div>
         <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full" style=${{ background: course?.color || '#ec4899' }}></span>${course?.name || '-'}${week ? ' · Week ' + week.number : ''}</div></div>
+          <span className="inline-block h-2 w-2 rounded-full" style=${{ background: course?.color || '#27293d' }}></span>${course?.name || '-'}${week ? ' · Week ' + week.number : ''}</div></div>
       <div className="flex items-center gap-1.5 flex-wrap"><${PriorityBadge} p=${t.priority} /><${StatusBadge} s=${t.status} /></div></div>
     <div className="mt-3 flex items-center gap-3">
       <div className="flex-1"><${Bar} value=${p} slim /></div><span className="text-xs text-gray-500 w-9 text-right">${p}%</span>
