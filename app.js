@@ -1,9 +1,14 @@
-import { React, h, sb, configured, Ctx, Toaster, Spinner, Icon, Avatar, btn, btn2, q, toast, go } from './lib.js';
+import { React, h, sb, configured, Ctx, Toaster, Spinner, Skeleton, Icon, Avatar, btn, btn2, q, toast, go } from './lib.js';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
 import { SetupScreen, AuthScreen, RecoveryScreen, GroupGate } from './auth.js';
-import { Dashboard, CoursesPage, CourseDetail, TasksPage } from './pages.js';
+import { CoursesPage, CourseDetail } from './pages.js';
+import { TasksPage } from './tasks.js';
+import { WorkPage } from './work.js';
+import { LinksPage, FilesPage } from './resources.js';
+import { ActivityPage } from './activity.js';
+import { Dashboard } from './dashboard.js';
 import { TaskDetail } from './task.js';
-import { CalendarPage, ActivityPage, MembersPage, MemberProfile, NotificationsPage, SettingsPage } from './pages2.js';
+import { CalendarPage, MembersPage, MemberProfile, NotificationsPage, SettingsPage } from './pages2.js';
 const { useState, useEffect, useCallback, useMemo } = React;
 
 // simpan kode undangan dari link (#/join/KODE) sebelum login
@@ -31,6 +36,7 @@ const SRC = {
   taskMembers: ['task_members', null, true], work: ['member_work_items', 'updated_at', true], checks: ['checklists', 'created_at', true],
   comments: ['comments', 'created_at', true], revisions: ['revisions', 'created_at', true], attachments: ['attachments', 'created_at', true],
   activity: ['activity_logs', 'created_at', false], members: ['group_members', 'joined_at', true], notifs: ['notifications', 'created_at', false],
+  workLogs: ['work_logs', 'created_at', false], links: ['resource_links', 'created_at', false],
 };
 const emptyData = () => Object.fromEntries(Object.keys(SRC).map((k) => [k, []]));
 
@@ -60,7 +66,7 @@ function useGroupData(groupId, userId) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table, filter }, () => load(key));
     });
     // event DELETE tidak membawa kolom filter -> muat ulang tabel utama juga
-    ['tasks', 'checklists', 'comments', 'courses', 'weeks', 'task_members', 'revisions', 'attachments'].forEach((table) => {
+    ['tasks', 'checklists', 'comments', 'courses', 'weeks', 'task_members', 'revisions', 'attachments', 'work_logs', 'resource_links'].forEach((table) => {
       const key = Object.keys(SRC).find((k) => SRC[k][0] === table);
       ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, () => load(key));
     });
@@ -72,16 +78,20 @@ function useGroupData(groupId, userId) {
 }
 
 // ---------- shell ----------
-const NAV = [
-  ['dashboard', 'Dashboard', 'home'], ['courses', 'Mata Kuliah', 'book'], ['tasks', 'Semua Tugas', 'check'], ['calendar', 'Kalender', 'cal'],
-  ['activity', 'Aktivitas', 'act'], ['members', 'Anggota Kelompok', 'users'], ['notifications', 'Notifikasi', 'bell'], ['settings', 'Pengaturan', 'set'],
+// [kunci, label, ikon, href(opsional)]
+const NAV_MAIN = [
+  ['dashboard', 'Dashboard', 'home'], ['tasks', 'Daftar Tugas', 'check'], ['work', 'Pengerjaan Saya', 'edit'],
+  ['activity', 'Aktivitas Anggota', 'act'], ['links', 'Link & Referensi', 'link'], ['files', 'File', 'clip'],
 ];
+const NAV_MORE = [['courses', 'Mata Kuliah', 'book'], ['calendar', 'Kalender', 'cal'], ['members', 'Anggota', 'users'], ['notifications', 'Notifikasi', 'bell']];
 
 function Workspace({ user, profile, memb, groups, app }) {
   const group = memb.groups;
   const hash = useHash();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [slim, setSlim] = useState(() => { try { return localStorage.getItem('sb-slim') === '1'; } catch { return false; } });
+  const toggleSlim = () => setSlim((v) => { try { localStorage.setItem('sb-slim', v ? '0' : '1'); } catch { /* abaikan */ } return !v; });
   const { d, loading, reload } = useGroupData(group.id, user.id);
   const members = d.members;
   const byId = useMemo(() => Object.fromEntries(members.map((m) => [m.user_id, m.profile])), [members]);
@@ -130,10 +140,13 @@ function Workspace({ user, profile, memb, groups, app }) {
   const parts = hash.replace(/^#\//, '').split('/');
   useEffect(() => { setOpen(false); setMenu(false); window.scrollTo(0, 0); }, [hash]);
   let page = null;
-  if (loading) page = h`<${Spinner} />`;
+  if (loading) page = h`<${Skeleton} />`;
   else {
     const [r, id] = parts;
-    if (r === 'courses') page = id ? h`<${CourseDetail} id=${id} />` : h`<${CoursesPage} />`;
+    if (r === 'work') page = h`<${WorkPage} />`;
+    else if (r === 'links') page = h`<${LinksPage} />`;
+    else if (r === 'files') page = h`<${FilesPage} />`;
+    else if (r === 'courses') page = id ? h`<${CourseDetail} id=${id} />` : h`<${CoursesPage} />`;
     else if (r === 'tasks') page = id ? h`<${TaskDetail} id=${id} />` : h`<${TasksPage} />`;
     else if (r === 'calendar') page = h`<${CalendarPage} />`;
     else if (r === 'activity') page = h`<${ActivityPage} />`;
@@ -142,37 +155,54 @@ function Workspace({ user, profile, memb, groups, app }) {
     else if (r === 'settings') page = h`<${SettingsPage} />`;
     else page = h`<${Dashboard} />`;
   }
-  const active = parts[0] === 'join' || !parts[0] ? 'dashboard' : parts[0];
+  const active = parts[0] === 'join' || !parts[0] ? 'dashboard' : parts[0] === 'members' && parts[1] === user.id ? 'profile' : parts[0];
 
-  const Side = () => h`<div className="flex flex-col h-full">
-    <div className="px-5 py-5 flex items-center gap-3"><div className="h-9 w-9 rounded-xl bg-pink-500 text-white flex items-center justify-center"><${Icon} n="check" size=${20} /></div>
-      <div><div className="font-bold leading-tight">Capstone Tracker</div><div className="text-[11px] text-gray-400">Achieve Together</div></div></div>
-    <nav className="px-3 flex-1 space-y-1">${NAV.map(([k, l, ic]) => h`<a key=${k} href=${'#/' + k}
-      className=${'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ' + (active === k ? 'bg-pink-100 text-pink-700' : 'text-gray-600 hover:bg-gray-100')}>
-      <${Icon} n=${ic} size=${18} />${l}${k === 'notifications' && unread > 0 ? h`<span className="ml-auto rounded-full bg-pink-500 text-white text-[11px] px-1.5 py-0.5">${unread}</span>` : ''}</a>`)}</nav>
-    <div className="p-3 border-t border-gray-100">
-      ${groups.length > 1 ? h`<select className="w-full rounded-xl border border-gray-200 text-sm px-2 py-2 mb-2" value=${group.id} onChange=${(e) => app.switchGroup(e.target.value)}>
-        ${groups.map((g) => h`<option key=${g.group_id} value=${g.group_id}>${g.groups?.name}</option>`)}</select>`
-        : h`<div className="text-xs text-gray-400 px-2 mb-2 truncate">Kelompok: <b className="text-gray-600">${group.name}</b></div>`}
-      <div className="text-[11px] text-gray-400 px-2">${isLeader ? 'Anda adalah Ketua' : 'Anda adalah Anggota'}</div></div></div>`;
+  const Item = ([k, l, ic, href]) => h`<a key=${k} href=${href || '#/' + k} title=${slim ? l : undefined} aria-label=${l}
+      className=${'group flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition-colors ' + (slim ? 'justify-center px-2 lg:px-2 ' : 'px-2.5 ') + (active === k ? 'bg-white/10 text-white' : 'text-[#b2d4dd]/80 hover:bg-white/5 hover:text-white')}>
+      <span className=${'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ' + (active === k ? 'bg-[#b2d4dd] text-[#27293d]' : 'text-[#b2d4dd] group-hover:text-white')}><${Icon} n=${ic} size=${18} /></span>
+      ${!slim && h`<span className="truncate">${l}</span>`}
+      ${k === 'notifications' && unread > 0 ? h`<span className=${'rounded-full bg-[#b2d4dd] px-1.5 py-0.5 text-[11px] font-semibold text-[#27293d] ' + (slim ? 'absolute right-1 top-1' : 'ml-auto')}>${unread}</span>` : ''}</a>`;
+
+  const Side = ({ drawer }) => { const sl = slim && !drawer; return h`<div className="flex h-full flex-col bg-[#27293d] text-white">
+    <div className=${'flex items-center gap-3 py-5 ' + (sl ? 'justify-center px-2' : 'px-5')}><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#b2d4dd] text-[#27293d]"><${Icon} n="check" size=${20} /></div>
+      ${!sl && h`<div className="min-w-0"><div className="font-bold leading-tight">Capstone Tracker</div><div className="text-[11px] text-[#b2d4dd]/70">Achieve Together</div></div>`}</div>
+    <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
+      ${NAV_MAIN.map(Item)}
+      ${Item(['profile', 'Profil', 'user', '#/members/' + user.id])}${Item(['settings', 'Pengaturan', 'set'])}
+      ${!sl ? h`<div className="mb-1 mt-5 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#b2d4dd]/50">Lainnya</div>` : h`<div className="my-3 border-t border-white/10"></div>`}
+      ${NAV_MORE.map(Item)}</nav>
+    <div className="safe-b border-t border-white/10 p-3">
+      ${!sl && (groups.length > 1 ? h`<select className="mb-2 w-full rounded-xl border-0 bg-white/10 px-2 py-2 text-sm text-white" value=${group.id} onChange=${(e) => app.switchGroup(e.target.value)}>
+        ${groups.map((g) => h`<option key=${g.group_id} value=${g.group_id} className="text-gray-800">${g.groups?.name}</option>`)}</select>`
+        : h`<div className="mb-1 truncate px-2 text-xs text-[#b2d4dd]/70">Kelompok: <b className="text-white">${group.name}</b></div>`)}
+      ${!sl && h`<div className="px-2 text-[11px] text-[#b2d4dd]/60">${isLeader ? 'Anda adalah Ketua' : 'Anda adalah Anggota'}</div>`}
+      ${drawer ? h`<button onClick=${app.signOut} className="mt-2 w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-300 hover:bg-white/5">Keluar</button>`
+        : h`<button onClick=${toggleSlim} className=${'mt-2 hidden w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-[#b2d4dd]/80 hover:bg-white/5 hover:text-white lg:flex ' + (sl ? 'justify-center' : '')} title=${sl ? 'Perbesar sidebar' : 'Perkecil sidebar'} aria-label="Ubah ukuran sidebar"><${Icon} n=${sl ? 'chr' : 'chl'} size=${18} />${!sl && 'Perkecil'}</button>`}</div></div>`; };
+
+  const Tab = ([k, l, ic, href]) => h`<a key=${k} href=${href || '#/' + k} className=${'flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium ' + (active === k ? 'text-pink-600' : 'text-gray-400')}>
+    <${Icon} n=${ic} size=${22} />${l}</a>`;
 
   return h`<${Ctx.Provider} value=${ctx}><div className="min-h-screen lg:flex">
-    <aside className="hidden lg:block w-64 shrink-0 bg-white border-r border-gray-100 sticky top-0 h-screen"><${Side} /></aside>
-    ${open && h`<div className="lg:hidden fixed inset-0 z-40 flex"><div className="w-64 bg-white shadow-xl"><${Side} /></div><div className="flex-1 bg-black/30" onClick=${() => setOpen(false)}></div></div>`}
-    <div className="flex-1 min-w-0">
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100 px-4 sm:px-6 py-3 flex items-center gap-3">
-        <button className="lg:hidden text-gray-600" onClick=${() => setOpen(true)}><${Icon} n="menu" /></button>
-        <div className="font-semibold text-gray-700 truncate">${group.name}</div>
+    <aside className=${'sticky top-0 hidden h-screen shrink-0 transition-[width] duration-200 lg:block ' + (slim ? 'w-[76px]' : 'w-64')}><${Side} /></aside>
+    ${open && h`<div className="fixed inset-0 z-50 flex lg:hidden"><div className="slide-right w-72 max-w-[85vw] shadow-xl"><${Side} drawer=${true} /></div><div className="flex-1 bg-gray-900/30 backdrop-blur-[2px] fade-in" onClick=${() => setOpen(false)}></div></div>`}
+    <div className="min-w-0 flex-1">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur sm:px-6">
+        <button className="-ml-1 rounded-lg p-2 text-gray-600 hover:bg-gray-50 lg:hidden" onClick=${() => setOpen(true)} aria-label="Buka menu"><${Icon} n="menu" /></button>
+        <div className="truncate font-semibold text-gray-700">${group.name}</div>
         <div className="ml-auto flex items-center gap-3">
-          <a href="#/notifications" className="relative text-gray-500 hover:text-pink-600"><${Icon} n="bell" size=${22} />
-            ${unread > 0 && h`<span className="absolute -top-1.5 -right-1.5 rounded-full bg-pink-500 text-white text-[10px] min-w-[16px] h-4 px-1 flex items-center justify-center">${unread}</span>`}</a>
-          <div className="relative"><button onClick=${() => setMenu(!menu)}><${Avatar} p=${profile} size=${34} /></button>
-            ${menu && h`<div className="absolute right-0 mt-2 w-52 rounded-xl bg-white border border-gray-100 shadow-lg py-1 text-sm fade-in">
-              <div className="px-3 py-2 border-b border-gray-100"><div className="font-medium truncate">${profile.name}</div><div className="text-xs text-gray-400 truncate">${profile.email}</div></div>
+          <a href="#/notifications" className="relative rounded-lg p-2 text-gray-500 hover:text-pink-600" aria-label="Notifikasi"><${Icon} n="bell" size=${22} />
+            ${unread > 0 && h`<span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pink-500 px-1 text-[10px] text-white">${unread}</span>`}</a>
+          <div className="relative"><button onClick=${() => setMenu(!menu)} aria-label="Akun"><${Avatar} p=${profile} size=${34} /></button>
+            ${menu && h`<div className="pop-in absolute right-0 mt-2 w-52 rounded-xl border border-gray-100 bg-white py-1 text-sm shadow-lg">
+              <div className="border-b border-gray-100 px-3 py-2"><div className="truncate font-medium">${profile.name}</div><div className="truncate text-xs text-gray-400">${profile.email}</div></div>
               <a href=${'#/members/' + user.id} className="block px-3 py-2 hover:bg-gray-50">Profil saya</a>
               <a href="#/settings" className="block px-3 py-2 hover:bg-gray-50">Pengaturan</a>
-              <button onClick=${app.signOut} className="w-full text-left px-3 py-2 hover:bg-gray-50 text-red-600">Keluar</button></div>`}</div></div></header>
-      <main className="p-4 sm:p-6 max-w-6xl mx-auto">${page}</main></div></div><//>`;
+              <button onClick=${app.signOut} className="w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50">Keluar</button></div>`}</div></div></header>
+      <main key=${active} className="page-in mx-auto max-w-6xl p-4 pb-28 sm:p-6 sm:pb-28 lg:pb-8">${page}</main></div>
+    <nav className="safe-b fixed inset-x-0 bottom-0 z-40 flex items-end border-t border-gray-100 bg-white/95 px-1 backdrop-blur lg:hidden" aria-label="Navigasi utama">
+      ${Tab(['dashboard', 'Beranda', 'home'])}${Tab(['tasks', 'Tugas', 'check'])}${Tab(['work', 'Pengerjaan', 'edit'])}
+      ${Tab(['files', 'File', 'clip'])}
+      <button onClick=${() => setOpen(true)} className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-gray-400"><${Icon} n="menu" size=${22} />Menu</button></nav></div><//>`;
 }
 
 function AuthedApp({ user }) {
@@ -234,7 +264,7 @@ function AuthedApp({ user }) {
   }, []);
 
   const signOut = async () => { localStorage.removeItem('cg'); await sb.auth.signOut(); go('#/dashboard'); };
-  if (err && (!profile || !groups)) return h`<div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-pink-50 via-white to-pink-100">
+  if (err && (!profile || !groups)) return h`<div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-lav-100 via-white to-cream-100">
     <div className="w-full max-w-md bg-white rounded-3xl shadow-lg border border-pink-100 p-6 text-center fade-in">
       <h2 className="font-semibold text-gray-800 mb-2">Data belum bisa dimuat</h2>
       <p className="text-sm text-gray-600 mb-5">${err}</p>
